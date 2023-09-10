@@ -3,6 +3,7 @@ import dash
 from dash import dcc
 from dash import html
 import plotly.express as px
+import plotly.graph_objects as go
 import numpy as np
 import sympy as sp
 
@@ -93,6 +94,7 @@ app.layout = html.Div(
         dcc.Input(id="x2", placeholder="ingrese x2"),
         dcc.RadioItems(id="radio-group", options=radio_options, value="minimum"),
         dcc.Graph(id="graph"),
+        dcc.Graph(id="error-graph"),
         html.Table(id="table"),
     ]
 
@@ -101,6 +103,7 @@ app.layout = html.Div(
 #Definir el callbacks
 @app.callback(
     [dash.dependencies.Output("graph", "figure"),
+    dash.dependencies.Output("error-graph", "figure"),
     dash.dependencies.Output("table", "children"),],
    [ dash.dependencies.Input("equation", "value"),
     dash.dependencies.Input("radio-group", "value"),
@@ -112,13 +115,13 @@ app.layout = html.Div(
 def plot_table(function, option, x0, x1, x2):
 
     if not function or not x0 or not x1 or not x2:
-        return dash.no_update, dash.no_update
+        return dash.no_update, dash.no_update, dash.no_update
     x = sp.Symbol('x')
 
     try:
         f = sp.lambdify(x, function, 'numpy')
     except Exception as e:
-        return dash.no_update, html.P(f"Error: {e}")
+        return dash.no_update, dash.no_update, html.P(f"Error: {e}")
 
     try:
 
@@ -126,15 +129,21 @@ def plot_table(function, option, x0, x1, x2):
         x1 = float(x1)
         x2 = float(x2)
     except ValueError:
-        return dash.no_update, html.P("error: invalid initial values")
+        return dash.no_update, dash.no_update, html.P("error: invalid initial values")
 
     #Solve the equation using the quadratic interpolation method
     try:
         x_solution, calculated_rows =  quadratic_interpolation(lambda x: f(x), option, x0, x1, x2)
     except ValueError as e:
-        return dash.no_update, html.P(f"Error: {e}")
+        return dash.no_update, dash.no_update, html.P(f"Error: {e}")
 
+    # Create a list to store the error values
+    error_values = [row[-1] for row in calculated_rows]
 
+    error_fig = go.Figure()
+    error_fig.add_trace(
+        go.Scatter(x=list(range(len(error_values))), y=error_values, mode="lines+markers", name="Error"))
+    error_fig.update_layout(title="Error in each Iteration", xaxis_title="Iteration", yaxis_title="Error")
 
     #plot the functions in the function
     x_vals = np.linspace(x0, x2, 100)
@@ -163,7 +172,7 @@ def plot_table(function, option, x0, x1, x2):
         ]
     ])
 
-    return fig, table
+    return fig, fig, table
 
 
 

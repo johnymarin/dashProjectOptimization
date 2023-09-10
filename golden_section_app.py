@@ -9,7 +9,7 @@ import sympy as sp
 
 phi = scipy.constants.golden_ratio
 phi = (np.sqrt(5)-1.0)/2.0
-def golden_section_search(f, xl, xu,  max_iterations=100, tolerance=1e-3):
+def golden_section_search(f, xl, xu,  max_iterations=5, tolerance=1e-3):
 
 
     calculated_rows = []

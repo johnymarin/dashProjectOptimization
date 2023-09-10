@@ -4,6 +4,7 @@ import scipy.constants
 from dash import dcc
 from dash import html
 import plotly.express as px
+import plotly.graph_objects as go
 import numpy as np
 import sympy as sp
 
@@ -57,11 +58,11 @@ app = dash.Dash(__name__)
 app.layout = html.Div(
     [
 
-        html.H1("Metodo Seccion Dorada por Johny Marin"),
+        html.H1("Metodo Newton Dorada por Johny Marin"),
         dcc.Input(id="equation", placeholder="ingrese la funcion"),
-        dcc.Input(id="xl", placeholder="ingrese xl"),
-        dcc.Input(id="xu", placeholder="ingrese xu"),
+        dcc.Input(id="xi", placeholder="ingrese xi"),
         dcc.Graph(id="graph"),
+        dcc.Graph(id="error-graph"),
         html.Table(id="table"),
     ]
 
@@ -70,16 +71,16 @@ app.layout = html.Div(
 #Definir el callbacks
 @app.callback(
     [dash.dependencies.Output("graph", "figure"),
+    dash.dependencies.Output("error-graph", "figure"),
     dash.dependencies.Output("table", "children"),],
    [ dash.dependencies.Input("equation", "value"),
-    dash.dependencies.Input("xl", "value"),
-    dash.dependencies.Input("xu", "value"),]
+    dash.dependencies.Input("xi", "value"),]
 )
 
 def plot_table(function, xi):
 
     if not function or not xi :
-        return dash.no_update, dash.no_update
+        return dash.no_update, dash.no_update, dash.no_update
     x = sp.Symbol('x')
 
     try:
@@ -89,22 +90,28 @@ def plot_table(function, xi):
         function_double_prime = function_prime.diff(x)
         fprima2 = sp.lambdify(x, function_double_prime, 'numpy')
     except Exception as e:
-        return dash.no_update, html.P(f"Error: {e}")
+        return dash.no_update, dash.no_update, html.P(f"Error: {e}")
 
 
     try:
 
         xi = float(xi)
     except ValueError:
-        return dash.no_update, html.P("error: invalid initial values")
+        return dash.no_update, dash.no_update, html.P("error: invalid initial values")
 
     #Solve the equation using the quadratic interpolation method
     try:
         x_solution, calculated_rows =  newton_raphson(lambda x: f(x), lambda x: fprima(x), lambda x: fprima2(x), xi)
     except ValueError as e:
-        return dash.no_update, html.P(f"Error: {e}")
+        return dash.no_update, dash.no_update, html.P(f"Error: {e}")
 
+    # Create a list to store the error values
+    error_values = [row[-1] for row in calculated_rows]
 
+    error_fig = go.Figure()
+    error_fig.add_trace(
+        go.Scatter(x=list(range(len(error_values))), y=error_values, mode="lines+markers", name="Error"))
+    error_fig.update_layout(title="Error in each Iteration", xaxis_title="Iteration", yaxis_title="Error")
 
     #plot the functions in the function
     x_vals = np.linspace(xi-10, xi+10, 100)
@@ -132,9 +139,7 @@ def plot_table(function, xi):
         ]
     ])
 
-    return fig, table
-
-
+    return fig, error_fig, table
 
 if __name__ == '__main__':
     app.run_server(debug=True)
