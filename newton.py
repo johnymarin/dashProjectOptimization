@@ -58,7 +58,7 @@ app = dash.Dash(__name__)
 app.layout = html.Div(
     [
 
-        html.H1("Metodo Newton Dorada por Johny Marin"),
+        html.H1("Metodo Newton  por Johny Marin"),
         dcc.Input(id="equation", placeholder="ingrese la funcion"),
         dcc.Input(id="xi", placeholder="ingrese xi"),
         dcc.Graph(id="graph"),
@@ -116,7 +116,7 @@ def plot_table(function, xi):
     #plot the functions in the function
     x_vals = np.linspace(xi-10, xi+10, 100)
     fig = px.line(x=x_vals, y=f(x_vals))
-    fig.update_layout(title="Metodo seccion newton raphson")
+    fig.update_layout(title="Metodo  newton raphson")
 
     #Create the table
     table = html.Table([
