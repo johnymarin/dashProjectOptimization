@@ -5,6 +5,8 @@ import plotly.graph_objects as go
 import numpy as np
 import sympy as sp
 
+# https://www.youtube.com/watch?v=kWRGkC0I3B4&t=319s
+
 
 from dash.dependencies import Input, Output, State
 from dash.dash_table.Format import Format, Scheme, Sign, Symbol
@@ -16,8 +18,18 @@ comparison_options = ['<', '<=', '>', '>=', '=', '!=']
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
+initial_data = [
+    {'operation': 'Objective Function', 'x1': 10, 'x2': 20, },
+    {'operation': 'Constraint 1', 'x1': 4, 'x2': 2, 'EQ': '<=', 'limit': 20 },
+    {'operation': 'Constraint 2', 'x1': 8, 'x2': 8, 'EQ': '<=', 'limit': 20 },
+    {'operation': 'Constraint 3',  'x2': 2, 'EQ': '<=', 'limit': 10 },
+]
+
+
 app.layout = html.Div([
     html.H1('Linear Programming Solver'),
+    dcc.Store(id='variable-counter', data=2),
+    dcc.Store(id='constraint-counter', data=3),
     html.Div([
         html.Label('Maximize or Minimize:'),
         dcc.Dropdown(
@@ -41,47 +53,72 @@ app.layout = html.Div([
             ],
 
             dropdown= { 'EQ': {'options': [{'label': opt, 'value': opt} for opt in comparison_options]}},
-            data=[
-                {'operation': 'Objective Function', 'x1': 3, 'x2': 5, },
-                {'operation': 'Constraint 1', },
-            ],
+            data= initial_data,
             editable=True,
             row_deletable=True
         ),
         html.Button('Add Variable', id='add-variable-button', n_clicks=0),
         html.Button('Add Constraint', id='add-constraint-button', n_clicks=0),
         html.Button('Submit', id='submit-val', n_clicks=0),
-        html.Div(id='output-container-button',
+        html.Div(id='output-standard-form',
                  children='Enter the values and press submit')
     ])
 ])
 
-variable_counter = 2
-constraint_counter = 1
+
 
 @app.callback(
-    Output('objective-function-table', 'columns'),
-    [Input('add-variable-button', 'n_clicks')],
-    [State('objective-function-table', 'columns')])
-def add_variable(n_clicks, columns):
-    global variable_counter
-    if n_clicks > 0:
-        variable_counter += 1
-        new_variable_id = f'x{variable_counter}'
-        columns.insert(-2, {'id': new_variable_id, 'name': new_variable_id, 'editable': True})
-    return columns
+    [Output('objective-function-table', 'columns'),
+     Output('objective-function-table', 'data'),
+     Output('output-standard-form', 'children')],
+    [Input('add-variable-button', 'n_clicks'),
+     Input('add-constraint-button', 'n_clicks'),
+     Input('submit-val', 'n_clicks')],
+    [State('objective-function-table', 'columns'),
+     State('objective-function-table', 'data'),
+     State('variable-counter', 'data'),
+     State('constraint-counter', 'data')]
+)
+def update_table(add_variable_clicks, add_constraint_clicks, submit_clicks, columns, data, variable_counter, constraint_counter):
+    ctx = dash.callback_context
+    if ctx.triggered_id:
+        if 'add-variable-button' in ctx.triggered_id:
+            if add_variable_clicks is not None:
+                variable_counter += add_variable_clicks
+                new_variable_id = f'x{variable_counter}'
+                columns.insert(-2, {'id': new_variable_id, 'name': new_variable_id, 'editable': True})
+        elif 'add-constraint-button' in ctx.triggered_id:
+            if add_constraint_clicks is not None:
+                constraint_counter += add_constraint_clicks
+                new_row = {'operation': f'Constraint {constraint_counter}', 'x1': '', 'x2': '', 'EQ': '', 'limit': ''}
+                data.append(new_row)
+        elif 'submit-val' in ctx.triggered_id:
+            if submit_clicks is not None:
+                obj_func = 'z = 10*x1 +20*x2'
+                dec_vars = ['x1', 'x2']
+                max_min = 'max'
+                constraints = [
+                    '+4*x1 +2*x2 <= 20',
+                    '+8*x1 +8*x2 <= 20',
+                    '+2*x2 <= 10'
+                ]
+                obj_func = 'z = 10*x1 +20*x2'
 
-@app.callback(
-    Output('objective-function-table', 'data'),
-    [Input('add-constraint-button', 'n_clicks')],
-    [State('objective-function-table', 'data')])
-def add_constraint(n_clicks, data):
-    global constraint_counter
-    if n_clicks > 0:
-        constraint_counter += 1
-        new_row = {'operation': f'Constraint {constraint_counter}', 'x1': '', 'x2': '', 'EQ': '', 'limit': ''}
-        data.append(new_row)
-    return data
+                output_text = f'''
+                Objetive Funcion: {obj_func}
+                desition variables: x1, x2 
+                Maximize z
+                Constraints: 
+                    '+4*x1 +2*x2 <= 20'
+                    '+8*x1 +8*x2 <= 20'
+                    '+2*x2 <= 10'
+                Slack variables: s1, s2, s3
+                '''
+                return columns, data, output_text
+
+    return columns, data, dash.no_update
 
 if __name__ == '__main__':
     app.run_server(debug=True)
+
+
