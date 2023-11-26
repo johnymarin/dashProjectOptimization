@@ -1,5 +1,7 @@
 # Carlos Enrique Orrego Zapata
+# enrique.orrego@udea.edu.co
 # Johny Marin Gutierrez
+# Johny.Marin@udea.edu.co
 
 import copy
 import dash
