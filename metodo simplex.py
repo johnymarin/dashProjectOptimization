@@ -1,3 +1,6 @@
+# Carlos Enrique Orrego Zapata
+# Johny Marin Gutierrez
+
 import copy
 import dash
 import pandas as pd
@@ -7,9 +10,6 @@ import plotly.graph_objects as go
 import numpy as np
 import sympy as sp
 from typing import List, Any
-
-# https://www.youtube.com/watch?v=kWRGkC0I3B4&t=319s
-# https://www.youtube.com/watch?v=eLDXXSTM2_c
 
 from dash.dependencies import Input, Output, State
 from dash.dash_table.Format import Format, Scheme, Sign, Symbol
